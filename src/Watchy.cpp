@@ -10,6 +10,7 @@ RTC_DATA_ATTR bool WIFI_CONFIGURED;
 RTC_DATA_ATTR bool BLE_CONFIGURED;
 RTC_DATA_ATTR weatherData currentWeather;
 RTC_DATA_ATTR int weatherIntervalCounter = WEATHER_UPDATE_INTERVAL;
+RTC_DATA_ATTR int networkTimeUpdateCounter = 60;
 RTC_DATA_ATTR bool displayFullInit = true;
 
 Watchy::Watchy(){} //constructor
@@ -28,7 +29,6 @@ void Watchy::init(String datetime){
     {
         case ESP_SLEEP_WAKEUP_EXT0: //RTC Alarm
             if(guiState == WATCHFACE_STATE){
-                RTC.read(currentTime);
                 showWatchFace(true); //partial updates on tick
             }
             break;
@@ -38,7 +38,6 @@ void Watchy::init(String datetime){
         default: //reset
             RTC.config(datetime);
             _bmaConfig();
-            RTC.read(currentTime);
             showWatchFace(false); //full update on reset
             break;
     }
@@ -101,7 +100,6 @@ void Watchy::handleButtonPress(){
   //Back Button
   else if (wakeupBit & BACK_BTN_MASK){
     if(guiState == MAIN_MENU_STATE){//exit to watch face if already in menu
-        RTC.read(currentTime);
         showWatchFace(false);
     }else if(guiState == APP_STATE){
         showMenu(menuIndex, false);//exit to menu if already in app
@@ -179,7 +177,6 @@ void Watchy::handleButtonPress(){
           }else if(digitalRead(BACK_BTN_PIN) == 1){
             lastTimeout = millis();
             if(guiState == MAIN_MENU_STATE){//exit to watch face if already in menu
-            RTC.read(currentTime);
             showWatchFace(false);
             break; //leave loop
             }else if(guiState == APP_STATE){
@@ -250,17 +247,17 @@ void Watchy::showFastMenu(byte menuIndex){
 
     const char *menuItems[] = {"Check Battery", "Vibrate Motor", "Show Accelerometer", "Set Time", "Setup WiFi", "Update Firmware"};
     for(int i=0; i<MENU_LENGTH; i++){
-    yPos = 30+(MENU_HEIGHT*i);
-    display.setCursor(0, yPos);
-    if(i == menuIndex){
-        display.getTextBounds(menuItems[i], 0, yPos, &x1, &y1, &w, &h);
-        display.fillRect(x1-1, y1-10, 200, h+15, GxEPD_WHITE);
-        display.setTextColor(GxEPD_BLACK);
-        display.println(menuItems[i]);      
-    }else{
-        display.setTextColor(GxEPD_WHITE);
-        display.println(menuItems[i]);
-    }   
+        yPos = 30+(MENU_HEIGHT*i);
+        display.setCursor(0, yPos);
+        if(i == menuIndex){
+            display.getTextBounds(menuItems[i], 0, yPos, &x1, &y1, &w, &h);
+            display.fillRect(x1-1, y1-10, 200, h+15, GxEPD_WHITE);
+            display.setTextColor(GxEPD_BLACK);
+            display.println(menuItems[i]);      
+        }else{
+            display.setTextColor(GxEPD_WHITE);
+            display.println(menuItems[i]);
+        }   
     }
 
     display.display(true);
@@ -307,6 +304,10 @@ void Watchy::vibMotor(uint8_t intervalMs, uint8_t length){
 }
 
 void Watchy::setTime(){
+    if(updateTime()) {
+        showMenu(menuIndex, false);
+        return;
+    }
 
     guiState = APP_STATE;
 
@@ -533,7 +534,48 @@ void Watchy::showAccelerometer(){
     showMenu(menuIndex, false);
 }
 
+bool Watchy::updateTime() {
+  if(networkTimeUpdateCounter >= 40) {
+      networkTimeUpdateCounter = 0;
+      if(connectWiFi()) {
+          HTTPClient http;
+          http.setConnectTimeout(3000);//3 second max timeout
+          RTC.read(currentTime);
+          int8_t start_seconds = currentTime.Second;
+          http.begin(UPDATE_SERVER_URL);
+          int httpResponseCode = http.GET();
+          if(httpResponseCode == 200) {
+              String resp = http.getString();
+              RTC.read(currentTime);
+              currentTime.Year  = resp.substring(0, 4).toInt()-2000;
+              currentTime.Month = resp.substring(4, 6).toInt();
+              currentTime.Day   = resp.substring(6, 8).toInt();
+              currentTime.Hour  = resp.substring(8, 10).toInt();
+              currentTime.Minute= resp.substring(10, 12).toInt();
+              int deltaSeconds = (currentTime.Second - start_seconds);
+              currentTime.Second= resp.substring(12, 14).toInt() 
+                  + deltaSeconds;
+              RTC.set(currentTime);
+              return true;
+          } else {
+              //http error
+          }
+          http.end();
+          //turn off radios
+          WiFi.mode(WIFI_OFF);
+          btStop();
+      } else {
+          // networkTimeUpdateCounter = -60;
+      }
+  } else {
+      networkTimeUpdateCounter++;
+  }
+  RTC.read(currentTime);
+  return false;
+}
+
 void Watchy::showWatchFace(bool partialRefresh){
+    updateTime();
   display.setFullWindow();
   drawWatchFace();
   display.display(partialRefresh); //partial refresh
@@ -753,8 +795,9 @@ void Watchy::_configModeCallback (WiFiManager *myWiFiManager) {
   display.display(false); //full refresh
 }
 
+#include "wifi_config.h"
 bool Watchy::connectWiFi(){
-    if(WL_CONNECT_FAILED == WiFi.begin()){//WiFi not setup, you can also use hard coded credentials with WiFi.begin(SSID,PASS);
+    if(WL_CONNECT_FAILED == WiFi.begin(WIFI_SSID, WIFI_PASSWORD)){//WiFi not setup, you can also use hard coded credentials with WiFi.begin(SSID,PASS);
         WIFI_CONFIGURED = false;
     }else{
         if(WL_CONNECTED == WiFi.waitForConnectResult()){//attempt to connect for 10s

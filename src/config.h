@@ -59,4 +59,6 @@
 #define HARDWARE_VERSION_MAJOR 1
 #define HARDWARE_VERSION_MINOR 0
 
+#define UPDATE_SERVER_URL "http://192.168.1.247:8000/wu"
+
 #endif
