@@ -14,10 +14,10 @@
 #include "bma.h"
 #include "config.h"
 
-typedef struct weatherData{
+typedef struct weatherData {
     int8_t temperature;
     int16_t weatherConditionCode;
-}weatherData;
+} weatherData;
 
 class Watchy {
     public:
@@ -32,9 +32,9 @@ class Watchy {
         float getBatteryVoltage();
         void vibMotor(uint8_t intervalMs = 100, uint8_t length = 20);
 
-        void handleButtonPress();
+        void runUI();
+        uint64_t readButtonState();
         void showMenu(byte menuIndex, bool partialRefresh);
-        void showFastMenu(byte menuIndex);
         void showBattery();
         void showBuzz();
         void showAccelerometer();
