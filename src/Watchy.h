@@ -34,7 +34,7 @@ class Watchy {
 
         void runUI();
         uint64_t readButtonState();
-        void showMenu(byte menuIndex, bool partialRefresh);
+        void showMenu(bool partialRefresh);
         void showBattery();
         void showBuzz();
         void showAccelerometer();
@@ -58,6 +58,7 @@ class Watchy {
 
 extern RTC_DATA_ATTR int guiState;
 extern RTC_DATA_ATTR int menuIndex;
+extern RTC_DATA_ATTR int menuTopIndex;
 extern RTC_DATA_ATTR BMA423 sensor;
 extern RTC_DATA_ATTR bool WIFI_CONFIGURED;
 extern RTC_DATA_ATTR bool BLE_CONFIGURED;

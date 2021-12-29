@@ -41,7 +41,9 @@
 #define APP_STATE 1
 #define FW_UPDATE_STATE 2
 #define MENU_HEIGHT 30
-#define MENU_LENGTH 6
+#define MENU_LENGTH 9
+#define MENU_PAGE_LENGTH 6
+#define MENU_PAGES (MENU_LENGTH / MENU_PAGE_LENGTH)
 //set time
 #define SET_HOUR 0
 #define SET_MINUTE 1
