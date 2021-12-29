@@ -85,6 +85,17 @@ void Watchy::runUI() {
             case WATCHFACE_STATE:
                 if(systemState & MENU_BTN_MASK) {
                     showMenu(false);
+                } else if(systemState & BACK_BTN_MASK) {
+                    showAltFace(false);
+                } else {
+                    return;
+                }
+                break;
+            case ALTFACE_STATE:
+                if(systemState & MENU_BTN_MASK) {
+                    showMenu(false);
+                } else if(systemState & BACK_BTN_MASK) {
+                    showWatchFace(false);
                 } else {
                     return;
                 }
@@ -119,7 +130,7 @@ void Watchy::runUI() {
                     } else if(systemState & DOWN_BTN_MASK) {
                         menuIndex++;
                         if(menuIndex > MENU_LENGTH) menuIndex = MENU_LENGTH;
-                        if(menuIndex > menuTopIndex+MENU_PAGE_LENGTH) {
+                        if(menuIndex >= menuTopIndex+MENU_PAGE_LENGTH) {
                             menuTopIndex += MENU_PAGE_LENGTH;
                             partialRefresh = false;
                         }
@@ -165,9 +176,13 @@ void Watchy::showMenu(bool partialRefresh) {
         "Set Time",
         "Vibrate Motor",
         "Setup WiFi",
+
         "Update Firmware",
-        "nop",
-        "nop"
+        ".",
+        ".",
+        ".",
+        ".",
+        "."
     };
     for(int i = 0; i < MENU_PAGE_LENGTH; i++){
         int j = menuTopIndex + i;
@@ -178,10 +193,10 @@ void Watchy::showMenu(bool partialRefresh) {
             display.getTextBounds(menuItems[j], 0, yPos, &x1, &y1, &w, &h);
             display.fillRect(x1-1, y1-10, 200, h+15, GxEPD_WHITE);
             display.setTextColor(GxEPD_BLACK);
-            display.println(menuItems[j]+j+String(" ")+i);      
+            display.println(menuItems[j]);      
         } else {
             display.setTextColor(GxEPD_WHITE);
-            display.println(menuItems[j]+j+String(" ")+i);
+            display.println(menuItems[j]);
         }   
     }
 
@@ -502,6 +517,20 @@ void Watchy::drawWatchFace(){
         display.print("0");
     }  
     display.println(currentTime.Minute);    
+}
+
+void Watchy::showAltFace(bool partialRefresh) {
+    display.setFullWindow();
+    drawAltFace();
+    display.display(partialRefresh);
+    guiState = ALTFACE_STATE;
+}
+
+void Watchy::drawAltFace() {
+    display.setFont(&DSEG7_Classic_Bold_53);
+    display.setCursor(5, 53+60);
+    display.println(networkTimeUpdateCounter);    
+    display.println(weatherIntervalCounter);
 }
 
 weatherData Watchy::getWeatherData(){

@@ -48,6 +48,8 @@ class Watchy {
 
         void showWatchFace(bool partialRefresh);
         virtual void drawWatchFace(); //override this method for different watch faces
+        void showAltFace(bool partialRefresh);
+        virtual void drawAltFace();
 
     private:
         void _bmaConfig();
