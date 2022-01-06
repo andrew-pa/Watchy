@@ -13,11 +13,7 @@
 #include "BLE.h"
 #include "bma.h"
 #include "config.h"
-
-typedef struct weatherData {
-    int8_t temperature;
-    int16_t weatherConditionCode;
-} weatherData;
+#include "WeatherData.h"
 
 class Watchy {
     public:
@@ -42,9 +38,9 @@ class Watchy {
         void setTime();
         void setupWifi();
         bool connectWiFi();
-        weatherData getWeatherData();
+        weatherData* getWeatherData();
         void updateFWBegin();
-        bool updateTime();
+        bool networkUpdate();
 
         void showWatchFace(bool partialRefresh);
         virtual void drawWatchFace(); //override this method for different watch faces

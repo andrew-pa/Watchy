@@ -250,11 +250,6 @@ void Watchy::vibMotor(uint8_t intervalMs, uint8_t length){
 }
 
 void Watchy::setTime(){
-    if(updateTime()) {
-        showMenu(false);
-        return;
-    }
-
     guiState = APP_STATE;
 
     RTC.read(currentTime);
@@ -480,11 +475,23 @@ void Watchy::showAccelerometer(){
     showMenu(false);
 }
 
-bool Watchy::updateTime() {
+bool Watchy::networkUpdate() {
   if(networkTimeUpdateCounter >= 40) {
       networkTimeUpdateCounter = 0;
       if(connectWiFi()) {
           RTC.syncNtpTime(); //Sync NTP
+          HTTPClient http; //Use Weather API for live data if WiFi is connected
+          http.setConnectTimeout(3000);//3 second max timeout
+          http.begin(NETWORK_UPDATE_URL);
+          int httpResponseCode = http.GET();
+          if(httpResponseCode == 200) {
+              String payload = http.getString();
+              loadWeatherData(&currentWeather, payload.c_str());
+          } else {
+              //http error
+          }
+          http.end();
+
           WiFi.mode(WIFI_OFF);
           btStop();
       } else {
@@ -498,7 +505,7 @@ bool Watchy::updateTime() {
 }
 
 void Watchy::showWatchFace(bool partialRefresh){
-    updateTime();
+    networkUpdate();
     display.setFullWindow();
     drawWatchFace();
     display.display(partialRefresh);
@@ -520,6 +527,7 @@ void Watchy::drawWatchFace(){
 }
 
 void Watchy::showAltFace(bool partialRefresh) {
+    networkUpdate();
     display.setFullWindow();
     drawAltFace();
     display.display(partialRefresh);
@@ -533,40 +541,8 @@ void Watchy::drawAltFace() {
     display.println(weatherIntervalCounter);
 }
 
-weatherData Watchy::getWeatherData(){
-    if(weatherIntervalCounter >= WEATHER_UPDATE_INTERVAL) { 
-        if(connectWiFi()){
-            RTC.syncNtpTime(); //Sync NTP
-            HTTPClient http; //Use Weather API for live data if WiFi is connected
-            http.setConnectTimeout(3000);//3 second max timeout
-            String weatherQueryURL = String(OPENWEATHERMAP_URL) + String(CITY_NAME) + String(",") + String(COUNTRY_CODE) + String("&units=") + String(TEMP_UNIT) + String("&appid=") + String(OPENWEATHERMAP_APIKEY);
-            http.begin(weatherQueryURL.c_str());
-            int httpResponseCode = http.GET();
-            if(httpResponseCode == 200) {
-                String payload = http.getString();
-                JSONVar responseObject = JSON.parse(payload);
-                currentWeather.temperature = int(responseObject["main"]["temp"]);
-                currentWeather.weatherConditionCode = int(responseObject["weather"][0]["id"]);            
-            }else{
-                //http error
-            }
-            http.end();
-            //turn off radios
-            WiFi.mode(WIFI_OFF);
-            btStop();
-        }else{//No WiFi, use internal temperature sensor
-            uint8_t temperature = sensor.readTemperature(); //celsius
-            if(strcmp(TEMP_UNIT, "imperial") == 0){
-                temperature = temperature * 9. / 5. + 32.; //fahrenheit
-            }
-            currentWeather.temperature = temperature;
-            currentWeather.weatherConditionCode = 800;
-        }
-        weatherIntervalCounter = 0;
-    }else{
-        weatherIntervalCounter++;
-    }
-    return currentWeather;
+weatherData* Watchy::getWeatherData(){
+    return &currentWeather;
 }
 
 float Watchy::getBatteryVoltage(){

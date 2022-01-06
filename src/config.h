@@ -51,7 +51,7 @@
 #define SET_DAY 4
 #define HOUR_12_24 24
 #define NTP_SERVER "pool.ntp.org"
-#define GMT_OFFSET_SEC 3600 * -8
+#define GMT_OFFSET_SEC 3600 * -6
 #define DST_OFFSET_SEC 3600
 //BLE OTA
 #define BLE_DEVICE_NAME "Watchy BLE OTA"
