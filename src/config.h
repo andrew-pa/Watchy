@@ -26,10 +26,6 @@
 #define DISPLAY_WIDTH 200
 #define DISPLAY_HEIGHT 200
 //weather api
-#define COUNTRY_CODE "US"
-#define OPENWEATHERMAP_URL "http://api.openweathermap.org/data/2.5/weather?q="
-#define TEMP_UNIT "metric" //use "imperial" for Fahrenheit
-#define WEATHER_UPDATE_INTERVAL 60 //minutes
 //wifi
 #define WIFI_AP_TIMEOUT 60
 #define WIFI_AP_SSID "Watchy AP"
@@ -50,9 +46,6 @@
 #define SET_MONTH 3
 #define SET_DAY 4
 #define HOUR_12_24 24
-#define NTP_SERVER "pool.ntp.org"
-#define GMT_OFFSET_SEC 3600 * -6
-#define DST_OFFSET_SEC 3600
 //BLE OTA
 #define BLE_DEVICE_NAME "Watchy BLE OTA"
 #define WATCHFACE_NAME "Watchy 7 Segment"

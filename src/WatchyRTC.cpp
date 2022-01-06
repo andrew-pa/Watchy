@@ -37,7 +37,7 @@ void WatchyRTC::clearAlarm(){
         nextAlarmMinute = rtc_pcf.getMinute();
         nextAlarmMinute = (nextAlarmMinute == 59) ? 0 : (nextAlarmMinute + 1); //set alarm to trigger 1 minute from now
         rtc_pcf.setAlarm(nextAlarmMinute, 99, 99, 99);
-    }    
+    }
 }
 
 void WatchyRTC::read(tmElements_t &tm){
@@ -51,7 +51,7 @@ void WatchyRTC::read(tmElements_t &tm){
         tm.Hour = rtc_pcf.getHour();
         tm.Minute = rtc_pcf.getMinute();
         tm.Second = rtc_pcf.getSecond();
-    }    
+    }
 }
 
 void WatchyRTC::set(tmElements_t tm){
@@ -65,7 +65,7 @@ void WatchyRTC::set(tmElements_t tm){
         rtc_pcf.setDate(tm.Day, tm.Wday - 1, tm.Month, 0, tmYearToY2k(tm.Year)); //TimeLib & DS3231 has Wday range of 1-7, but PCF8563 stores day of week in 0-6 range
         //hr, min, sec
         rtc_pcf.setTime(tm.Hour, tm.Minute, tm.Second);
-        clearAlarm();      
+        clearAlarm();
     }
 }
 
@@ -92,7 +92,7 @@ void WatchyRTC::_DSConfig(String datetime){ //String datetime is YYYY:MM:DD:HH:M
     //https://github.com/JChristensen/DS3232RTC
     rtc_ds.squareWave(SQWAVE_NONE); //disable square wave output
     rtc_ds.setAlarm(ALM2_EVERY_MINUTE, 0, 0, 0, 0); //alarm wakes up Watchy every minute
-    rtc_ds.alarmInterrupt(ALARM_2, true); //enable alarm interrupt  
+    rtc_ds.alarmInterrupt(ALARM_2, true); //enable alarm interrupt
 }
 
 void WatchyRTC::_PCFConfig(String datetime){ //String datetime is YYYY:MM:DD:HH:MM:SS
@@ -109,40 +109,10 @@ void WatchyRTC::_PCFConfig(String datetime){ //String datetime is YYYY:MM:DD:HH:
         //day, weekday, month, century(1=1900, 0=2000), year(0-99)
         rtc_pcf.setDate(tm.Day, tm.Wday - 1, tm.Month, 0, tmYearToY2k(tm.Year)); //TimeLib & DS3231 has Wday range of 1-7, but PCF8563 stores day of week in 0-6 range
         //hr, min, sec
-        rtc_pcf.setTime(tm.Hour, tm.Minute, tm.Second);     
+        rtc_pcf.setTime(tm.Hour, tm.Minute, tm.Second);
     }
     //on POR event, PCF8563 sets month to 0, which will give an error since months are 1-12
     clearAlarm();
-}
-
-void WatchyRTC::syncNtpTime(){ //NTP sync - call after connecting to WiFi and remember to turn it back off
-    configTime(GMT_OFFSET_SEC, DST_OFFSET_SEC, NTP_SERVER);
-    struct tm timeinfo;
-    if(!getLocalTime(&timeinfo)){
-        return; //NTP sync failed
-    }
-    /****************************************************
-    struct tm
-    {
-        int    tm_sec;   //   Seconds [0,60]. 
-        int    tm_min;   //   Minutes [0,59]. 
-        int    tm_hour;  //   Hour [0,23]. 
-        int    tm_mday;  //   Day of month [1,31]. 
-        int    tm_mon;   //   Month of year [0,11]. 
-        int    tm_year;  //   Years since 1900. 
-        int    tm_wday;  //   Day of week [0,6] (Sunday =0). 
-        int    tm_yday;  //   Day of year [0,365]. 
-        int    tm_isdst; //   Daylight Savings flag. 
-    }
-    ****************************************************/      
-    tmElements_t tm;
-    tm.Year = CalendarYrToTm(timeinfo.tm_year + 1900);
-    tm.Month = timeinfo.tm_mon + 1; //tm.Month 1 - 12
-    tm.Day = timeinfo.tm_mday;
-    tm.Hour = timeinfo.tm_hour;
-    tm.Minute = timeinfo.tm_min;
-    tm.Second = timeinfo.tm_sec;
-    set(tm);
 }
 
 String WatchyRTC::_getValue(String data, char separator, int index)
